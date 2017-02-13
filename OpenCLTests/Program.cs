@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,10 +15,28 @@ namespace OpenCLTests
             int width = 5000;
             int height = 4000;
             int[] iterateValues = new int[width * height];
-            Random rand = new Random(1234); 
-            for (int c=0;c<width * height; c++)
+            BinaryFormatter formatter = new BinaryFormatter();
+            using (FileStream fin = File.OpenRead("test.testdata"))
             {
-                iterateValues[c] = rand.Next(); 
+                ushort[] array = formatter.Deserialize(fin) as ushort[];
+                if (array != null)
+                {
+                    for (int y = 0, i = 0; y < height; y++)
+                    {
+                        for (int x = 0; x < width; x++, i++)
+                        {
+                            int innerY = y % 424;
+                            int innerX = x % 512;
+
+                            int innerIndex = innerY * 512 + innerX;
+                            ushort v = array[innerIndex];
+                            if(v > 0)
+                            {
+                                iterateValues[i] = v;
+                            }
+                        }
+                    }
+                }
             }
 
             int[] clOutput = new int[height * width];
