@@ -1,6 +1,7 @@
 ﻿using Cloo;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -53,7 +54,7 @@ namespace OpenCLTests
 
             ComputeCommandQueue commands = new ComputeCommandQueue(context, context.Devices[0], ComputeCommandQueueFlags.None);
 
-           // ComputeEventList events = new ComputeEventList();
+            // ComputeEventList events = new ComputeEventList();
 
             commands.Execute(kernel, null, new long[] { count }, null, null);
 
@@ -62,19 +63,24 @@ namespace OpenCLTests
 
             unsafe
             {
-                fixed(float* arrCPtr = arrC)
+                fixed (float* arrCPtr = arrC)
                 {
                     commands.Read(c, false, 0, count, new IntPtr(arrCPtr), null);
                     commands.Finish();
                 }
             }
 
-            return; 
+            return;
             //arrCHandle.Free();
         }
 
-        private static void DoItInternal(int height, int width, int[] iterateValues, int maxDiff)
+        private static long DoItInternal(int height, int width, int[] iterateValues, int[] outputBuffer, int maxDiff)
         {
+            //foreach (ComputePlatform platform in ComputePlatform.Platforms)
+            //{
+            //    Console.WriteLine(platform.Name); 
+            //}
+
             // pick the device platform 
             ComputePlatform intelGPU = ComputePlatform.Platforms.Where(n => n.Name.Contains("Intel")).First();
 
@@ -92,7 +98,7 @@ namespace OpenCLTests
 
             // read the open cl source. 
             string kernelSource = null;
-            using (StreamReader sr = new StreamReader("kernel.cl"))
+            using (StreamReader sr = new StreamReader("kernel2.cl"))
             {
                 kernelSource = sr.ReadToEnd();
             }
@@ -111,14 +117,16 @@ namespace OpenCLTests
             kernel.SetMemoryArgument(0, intArray);
 
             // output array. 
-            int[] outputBuffer = new int[height * width];
+            //int[] outputBuffer = new int[height * width];
             ComputeBuffer<int> outArray = new ComputeBuffer<int>(context,
                 ComputeMemoryFlags.WriteOnly | ComputeMemoryFlags.UseHostPointer,
                 outputBuffer);
             kernel.SetMemoryArgument(1, outArray);
 
-            // execute the kernel. 
-            commandQueue.Execute(kernel, null, new long[] { width * height }, null, null);
+            kernel.SetValueArgument<int>(2, width);
+            kernel.SetValueArgument<int>(3, maxDiff);
+
+            commandQueue.Execute(kernel, new long[] { 0 }, new long[] { width * height }, null, null);
 
             unsafe
             {
@@ -129,15 +137,28 @@ namespace OpenCLTests
                 }
             }
 
-            return;
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            // execute the kernel. 
+            commandQueue.Execute(kernel, new long[] { 0 }, new long[] { width * height }, null, null);
+
+            unsafe
+            {
+                fixed (int* outputBufferPtr = outputBuffer)
+                {
+                    commandQueue.Read(outArray, false, 0, outputBuffer.Length, new IntPtr(outputBufferPtr), null);
+                    commandQueue.Finish();
+                }
+            }
+            sw.Stop();
+
+            return sw.ElapsedMilliseconds;
         }
 
-        public static bool[] DoIt(int height, int width, int[] iterateValues, int maxDiff)
+        public static long DoIt(int height, int width, int[] iterateValues, int[] output, int maxDiff)
         {
             //Example(); 
-            DoItInternal(height, width, iterateValues, maxDiff);
-
-            return null; 
+            return DoItInternal(height, width, iterateValues, output, maxDiff);
         }
     }
 }
