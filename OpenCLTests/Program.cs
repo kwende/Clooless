@@ -18,6 +18,7 @@ namespace OpenCLTests
             {
                 iterateValues[c] = rand.Next(); 
             }
+
             int[] clOutput = new int[height * width];
             long openClTime = OpenCLEdgeDetector.DoIt(height, width, iterateValues, clOutput, 350);
 
@@ -32,7 +33,7 @@ namespace OpenCLTests
                 }
             }
 
-            Console.WriteLine($"OpenCL time {openClTime}, Classic time {classicTime}");
+            Console.WriteLine($"OpenCL time {openClTime}, Classic time {classicTime}. Or {classicTime / (openClTime * 1.0f)}x faster.");
             Console.ReadLine();
         }
     }

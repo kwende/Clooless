@@ -46,7 +46,6 @@ namespace OpenCLTests
                 for (int x = 1; x < width-1; x ++)
                 {
                     int i = y * width + x;
-                    output[i] = 2; 
                     // Check to see if this pixel is nonzero
                     if (iterateValues[i] > 0)
                     {

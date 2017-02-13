@@ -124,9 +124,10 @@ namespace OpenCLTests
             kernel.SetMemoryArgument(1, outArray);
 
             kernel.SetValueArgument<int>(2, width);
-            kernel.SetValueArgument<int>(3, maxDiff);
+            kernel.SetValueArgument<int>(3, height);
+            kernel.SetValueArgument<int>(4, maxDiff);
 
-            commandQueue.Execute(kernel, new long[] { 0 }, new long[] { width * height }, null, null);
+            commandQueue.Execute(kernel, new long[] { 0 }, new long[] { width, height }, null, null);
 
             unsafe
             {
